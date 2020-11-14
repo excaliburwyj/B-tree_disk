@@ -221,134 +221,157 @@ bool CLbplusTree::insertToNode(CLbplusTreeNode* node, KeyType key, const DataTyp
 
 bool CLbplusTree::select(KeyType lowerBound, KeyType upperBound, bool lowerContain, bool upperContain, std::vector<DataType> & selectResult)
 {
-	//if (lowerBound > upperBound)
-	//{
-	//	return false;
-	//}
-	//SearchResult beginR, finalR;
-	//search(m_Root,lowerBound, beginR);
-	//search(m_Root,upperBound, finalR);
-	//CLbplusTreeLeafNode *beginNode = beginR.targetNode, *finalNode = finalR.targetNode;
-	//int beginIndex = beginR.keyIndex, finalIndex = finalR.keyIndex;
-	//if (beginR.targetNode->getKeyValue(beginR.keyIndex) < lowerBound || (beginR.targetNode->getKeyValue(beginR.keyIndex) == lowerBound && !lowerContain)) {
-	//	beginIndex += 1;
-	//}
-	//if (finalR.targetNode->getKeyValue(finalR.keyIndex) > upperBound || (finalR.targetNode->getKeyValue(finalR.keyIndex) == upperBound && !upperContain)) {
-	//	finalIndex -= 1;
-	//}
-	//if (beginNode == finalNode)
-	//{
-	//	for (int i = beginIndex; i <= finalIndex; ++i)
-	//	{
-	//		selectResult.push_back(beginNode->getData(i));
-	//	}
-	//}
-	//else 
-	//{
-	//	for (CLbplusTreeLeafNode* pLeaf = beginNode; pLeaf != finalNode; pLeaf = pLeaf->getRightSibling())
-	//	{
-	//		for (int i = beginIndex; i < pLeaf->getKeyNum(); ++i)
-	//		{
-	//			selectResult.push_back(pLeaf->getData(i));
-	//		}
-	//		beginIndex = 0;
-	//	}
-	//	for (int i = 0; i <= finalIndex; ++i)
-	//	{
-	//		selectResult.push_back(finalNode->getData(i));
-	//	}
-	//}
-	//std::sort<std::vector<DataType>::iterator>(selectResult.begin(), selectResult.end());
+	if (lowerBound > upperBound)
+	{
+		return false;
+	}
+	SearchResult beginR, finalR;
+	search(m_RootOffset,lowerBound, beginR);
+	search(m_RootOffset,upperBound, finalR);
+	STNodeDiskMemory beginNode = beginR.targetNode, finalNode = finalR.targetNode;
+	int beginIndex = beginR.keyIndex, finalIndex = finalR.keyIndex;
+	if (beginNode.m_KeyValues[beginR.keyIndex] < lowerBound || (beginNode.m_KeyValues[beginR.keyIndex] == lowerBound && !lowerContain)) {
+		beginIndex += 1;
+	}
+	if (finalNode.m_KeyValues[finalR.keyIndex] > upperBound || (finalNode.m_KeyValues[finalR.keyIndex] == upperBound && !upperContain)) {
+		finalIndex -= 1;
+	}
+	if (beginNode.m_SelfOffset == finalNode.m_SelfOffset)
+	{
+		for (int i = beginIndex; i <= finalIndex; ++i)
+		{
+			selectResult.push_back(beginNode.m_Datas[i]);
+		}
+	}
+	else 
+	{
+		int rightSiblingOffset = -1;
+		do {
+
+			STNodeDiskMemory searchNode = rightSiblingOffset == -1 ? beginNode : GetNodeFromDisk(rightSiblingOffset);
+			for (int i = beginIndex; i < searchNode.m_KeyNum; ++i)
+			{
+				selectResult.push_back(searchNode.m_Datas[i]);
+			}
+			beginIndex = 0;
+			rightSiblingOffset = searchNode.m_RightSiblingOffset;
+		} while (rightSiblingOffset != finalNode.m_SelfOffset);
+
+
+		if (finalNode.m_SelfOffset != -1)
+		{
+			for (int i = 0; i <= finalIndex; i++)
+			{
+				selectResult.push_back(finalNode.m_Datas[i]);
+			}
+		}
+
+	}
+	std::sort<std::vector<DataType>::iterator>(selectResult.begin(), selectResult.end());
 	return true;
 }
 
 bool CLbplusTree::select(KeyType key, SELECT_TYPE selectType, std::vector<DataType>& selectResult)
 {
-	//if (m_Root == NULL)
-	//{
-	//	return false;
-	//}
+	if (m_RootOffset == -1)
+	{
+		return false;
+	}
 
-	//switch (selectType)
-	//{
-	//case SELECT_TYPE::EQ:
-	//	if (key > m_MaxKey || key < m_DataHead->getKeyValue(0))
-	//	{
-	//		return false;
-	//	}
-	//	else 
-	//	{
-	//		SearchResult searchResult;
-	//		search(m_Root, key, searchResult);
-	//		if (searchResult.targetNode->getKeyValue(searchResult.keyIndex) == key) {
-	//			selectResult.push_back(searchResult.targetNode->getData(searchResult.keyIndex));
-	//		}
-	//	}
-	//	break;
-	//case SELECT_TYPE::GT:
-	//case SELECT_TYPE::GE:
-	//{
-	//	CLbplusTreeLeafNode* beginNode = m_DataHead;
-	//	int beginIndex = 0;
-	//	if (key >= m_DataHead->getKeyValue(0))
-	//	{
-	//		SearchResult searchResult;
-	//		search(m_Root, key, searchResult);
-	//		beginNode = searchResult.targetNode;
-	//		beginIndex = searchResult.keyIndex;
-	//		if (beginNode->getKeyValue(beginIndex) < key || (beginNode->getKeyValue(beginIndex) == key && selectType == SELECT_TYPE::GT))
-	//		{
-	//			beginIndex += 1;
-	//		}
-	//	}
-	//	//顺序添加查找结果
-	//	for (CLbplusTreeLeafNode* pLeaf = beginNode; pLeaf != NULL; pLeaf = pLeaf->getRightSibling())
-	//	{
-	//		for (int i = beginIndex; i < pLeaf->getKeyNum(); ++i)
-	//		{
-	//			selectResult.push_back(pLeaf->getData(i));
-	//		}
-	//		//第二个节点开始，每个key都要添加
-	//		beginIndex = 0;
-	//	}
-	//}
-	//	break;
-	//case SELECT_TYPE::LT:
-	//case SELECT_TYPE::LE:
-	//{
-	//	CLbplusTreeLeafNode* finalNode = NULL;
-	//	int finalIndex = -1;
-	//	if (key <= m_MaxKey)
-	//	{
-	//		SearchResult searchResult;
-	//		search(m_Root, key, searchResult);
-	//		finalNode = searchResult.targetNode;
-	//		finalIndex = searchResult.keyIndex;
-	//		if (finalNode->getKeyValue(finalIndex) > key || (finalNode->getKeyValue(finalIndex) == key && selectType == SELECT_TYPE::LT))
-	//		{
-	//			finalIndex -= 1;
-	//		}
-	//	}
-	//	for (CLbplusTreeLeafNode* pLeaf = m_DataHead; pLeaf != finalNode; pLeaf = pLeaf->getRightSibling())
-	//	{
-	//		for (int i = 0; i < pLeaf->getKeyNum(); ++i)
-	//		{
-	//			selectResult.push_back(pLeaf->getData(i));
-	//		}
-	//	}
-	//	if (finalNode != NULL)
-	//	{
-	//		for (int i = 0; i <= finalIndex; i++)
-	//		{
-	//			selectResult.push_back(finalNode->getData(i));
-	//		}
-	//	}
-	//}
-	//	break;
-	//default:
-	//	break;
-	//}
-	//std::sort<std::vector<DataType>::iterator>(selectResult.begin(), selectResult.end());
+	switch (selectType)
+	{
+	case SELECT_TYPE::EQ:
+	{
+		STNodeDiskMemory headNode = GetNodeFromDisk(m_DataHeadOffset);
+		if (key > m_MaxKey || key < headNode.m_KeyValues[0])
+		{
+			return false;
+		}
+		else
+		{
+			SearchResult searchResult;
+			search(m_RootOffset, key, searchResult);
+			if (searchResult.targetNode.m_KeyValues[searchResult.keyIndex] == key) {
+				selectResult.push_back(searchResult.targetNode.m_Datas[searchResult.keyIndex]);
+			}
+		}
+	}
+		break;
+	case SELECT_TYPE::GT:
+	case SELECT_TYPE::GE:
+	{
+		STNodeDiskMemory beginNode = GetNodeFromDisk(m_DataHeadOffset);
+		int beginIndex = 0;
+		if (key >= beginNode.m_KeyValues[0])
+		{
+			SearchResult searchResult;
+			search(m_RootOffset, key, searchResult);
+			beginNode = searchResult.targetNode;
+			beginIndex = searchResult.keyIndex;
+			if (beginNode.m_KeyValues[beginIndex] < key || (beginNode.m_KeyValues[beginIndex] == key && selectType == SELECT_TYPE::GT))
+			{
+				beginIndex += 1;
+			}
+		}
+		//顺序添加查找结果
+		int rightSiblingOffset = -1;
+		do {
+			
+			STNodeDiskMemory searchNode = rightSiblingOffset==-1? beginNode: GetNodeFromDisk(rightSiblingOffset);
+			for (int i = beginIndex; i < searchNode.m_KeyNum; ++i)
+			{
+				selectResult.push_back(searchNode.m_Datas[i]);
+			}
+			//第二个节点开始，每个key都要添加
+			beginIndex = 0;
+			rightSiblingOffset = beginNode.m_RightSiblingOffset;
+		} while (rightSiblingOffset != -1);
+
+	}
+	break;
+	case SELECT_TYPE::LT:
+	case SELECT_TYPE::LE:
+	{
+		STNodeDiskMemory finalNode;
+		int finalIndex = -1;
+		if (key <= m_MaxKey)
+		{
+			SearchResult searchResult;
+			search(m_RootOffset, key, searchResult);
+			finalNode = searchResult.targetNode;
+			finalIndex = searchResult.keyIndex;
+			if (finalNode.m_KeyValues[finalIndex] > key || (finalNode.m_KeyValues[finalIndex] == key && selectType == SELECT_TYPE::LT))
+			{
+				finalIndex -= 1;
+			}
+		}
+
+		int rightSiblingOffset = m_DataHeadOffset;
+		do {
+
+			STNodeDiskMemory searchNode = GetNodeFromDisk(rightSiblingOffset);
+			for (int i = 0; i < searchNode.m_KeyNum; ++i)
+			{
+				selectResult.push_back(searchNode.m_Datas[i]);
+			}
+			rightSiblingOffset = searchNode.m_RightSiblingOffset;
+		} while (rightSiblingOffset != finalNode.m_SelfOffset);
+
+
+		if (finalNode.m_SelfOffset != -1)
+		{
+			for (int i = 0; i <= finalIndex; i++)
+			{
+				selectResult.push_back(finalNode.m_Datas[i]);
+			}
+		}
+	}
+	break;
+	default:
+		break;
+	}
+	
+	std::sort<std::vector<DataType>::iterator>(selectResult.begin(), selectResult.end());
 
 	return true;
 }
