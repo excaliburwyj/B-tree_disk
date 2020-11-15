@@ -15,6 +15,7 @@ class CLbplusTree
 {
 public:
 	CLbplusTree();
+	bool hasIndex();
 	void nodeInsert(KeyType key, const DataType& data, int childOffset, int childIndex, STNodeDiskMemory& node);
 	//void nodeInsert(KeyType key, const DataType& data, STNodeDiskMemory& node);
 	~CLbplusTree() {};

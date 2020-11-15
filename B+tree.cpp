@@ -12,13 +12,16 @@ int main()
 {
     int64_t index = 0;
     CLbplusTree tree;
-    for (int i = 0; i < 10; i++)
+    if (!tree.hasIndex()) 
     {
-        srand((unsigned)time(NULL));
+        for (int i = 0; i < 10; i++)
+        {
+            srand((unsigned)time(NULL));
 
-        int key = rand() % 1000;
-        int data = i + 10000;
-        tree.insert(i, data);
+            int key = rand() % 1000;
+            int data = i + 10000;
+            tree.insert(i, data);
+        }
     }
     SELECT_TYPE types[5]{ SELECT_TYPE::EQ,SELECT_TYPE::GT,SELECT_TYPE::GE,SELECT_TYPE::LT,SELECT_TYPE::LE };
     for (int i = 0; i < 10; i++) 

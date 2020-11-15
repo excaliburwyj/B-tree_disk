@@ -103,7 +103,28 @@ CLbplusTree::CLbplusTree()
 	{
 		cout << "open failed" << endl;
 	}
+	else 
+	{
+		m_File.seekg(0, ios_base::end);
+		int nFileLen = m_File.tellg();
+		if (nFileLen != 0)
+		{
+			m_NewNodeOffset = nFileLen;
+			m_DataHeadOffset = 0;
+			m_RootOffset = 0;
+			adjustRoot();
+		}
+	}
 
+}
+
+bool CLbplusTree::hasIndex()
+{
+	if (m_RootOffset == -1)
+	{
+		return false;
+	}
+	return true;
 }
 
 void CLbplusTree::nodeInsert(KeyType key, const DataType& data, int childOffset, int childIndex, STNodeDiskMemory &node)
@@ -324,7 +345,7 @@ bool CLbplusTree::select(KeyType key, SELECT_TYPE selectType, std::vector<DataTy
 			}
 			//第二个节点开始，每个key都要添加
 			beginIndex = 0;
-			rightSiblingOffset = beginNode.m_RightSiblingOffset;
+			rightSiblingOffset = searchNode.m_RightSiblingOffset;
 		} while (rightSiblingOffset != -1);
 
 	}
@@ -347,7 +368,8 @@ bool CLbplusTree::select(KeyType key, SELECT_TYPE selectType, std::vector<DataTy
 		}
 
 		int rightSiblingOffset = m_DataHeadOffset;
-		do {
+		
+		while (rightSiblingOffset != finalNode.m_SelfOffset) {
 
 			STNodeDiskMemory searchNode = GetNodeFromDisk(rightSiblingOffset);
 			for (int i = 0; i < searchNode.m_KeyNum; ++i)
@@ -355,7 +377,7 @@ bool CLbplusTree::select(KeyType key, SELECT_TYPE selectType, std::vector<DataTy
 				selectResult.push_back(searchNode.m_Datas[i]);
 			}
 			rightSiblingOffset = searchNode.m_RightSiblingOffset;
-		} while (rightSiblingOffset != finalNode.m_SelfOffset);
+		}
 
 
 		if (finalNode.m_SelfOffset != -1)
